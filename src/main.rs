@@ -1,10 +1,20 @@
-use std::io;
 use std::io::Write;
+use std::{io, str::FromStr};
 
-fn parse_command(cmd: &str) -> i32 {
-    match cmd {
-        "exit" => 0,
-        _ => 1,
+use crate::Cmd::{EchoCmd, ExitCmd, NotRecognisedCmd};
+
+enum Cmd {
+    ExitCmd(i32),
+    EchoCmd(String),
+    NotRecognisedCmd(String),
+}
+
+fn parse_command(cmd: &str) -> Cmd {
+    let slice: Vec<&str> = cmd.split_whitespace().collect();
+    match &slice[..] {
+        ["exit"] => ExitCmd(0),
+        ["echo", rest @ ..] => EchoCmd(rest.join(" ").to_string()),
+        a => NotRecognisedCmd(a.join(" ").to_string()),
     }
 }
 
@@ -14,14 +24,19 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
         let result = io::stdin().read_line(&mut cmd);
+        let cmd_trimmed = cmd.trim();
         match result {
-            Ok(_size) => {
-                if parse_command(cmd.trim()) == 0 {
+            Ok(_size) => match parse_command(cmd_trimmed) {
+                ExitCmd(num) => {
                     break;
-                } else {
-                    println!("{}: command not found", cmd.trim())
+                },
+                EchoCmd(s) => {
+                    println!("{}", s)
+                },
+                NotRecognisedCmd(cm) => {
+                    println!("{}: command not found", cm)
                 }
-            }
+            },
             Err(er) => {
                 println!("Error reading from stdin {}", er.to_string())
             }
