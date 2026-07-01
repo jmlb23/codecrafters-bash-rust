@@ -17,11 +17,7 @@ fn main() {
         let result = io::stdin().read_line(&mut cmd);
         match result {
             Ok(_size) => {
-                if parse_command(cmd.trim()) == 0 {
-                    exit(0);
-                } else {
-                    println!("{}: command not found", cmd)
-                }
+                println!("{}: command not found", cmd)
             }
             Err(er) => {
                 println!("Error reading from stdin {}", er.to_string())
