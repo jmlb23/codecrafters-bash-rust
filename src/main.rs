@@ -17,7 +17,7 @@ fn main() {
         let result = io::stdin().read_line(&mut cmd);
         match result {
             Ok(_size) => {
-                println!("{}: command not found", cmd)
+                println!("{}: command not found", cmd.trim())
             }
             Err(er) => {
                 println!("Error reading from stdin {}", er.to_string())
