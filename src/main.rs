@@ -1,6 +1,5 @@
 use std::io;
 use std::io::Write;
-use std::process::exit;
 
 fn parse_command(cmd: &str) -> i32 {
     match cmd {
@@ -17,7 +16,11 @@ fn main() {
         let result = io::stdin().read_line(&mut cmd);
         match result {
             Ok(_size) => {
-                println!("{}: command not found", cmd.trim())
+                if parse_command(cmd.trim()) == 0 {
+                    break;
+                } else {
+                    println!("{}: command not found", cmd.trim())
+                }
             }
             Err(er) => {
                 println!("Error reading from stdin {}", er.to_string())
