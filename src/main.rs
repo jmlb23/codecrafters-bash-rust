@@ -46,7 +46,7 @@ fn which_type(cmd: String, state: &State) -> Type {
         alias if state.alias.contains_key(alias) => Type::Alias,
         keyword if state.keywords.contains(&keyword.to_string()) => Type::Keyword,
         function if state.functions.contains_key(function) => Type::Function,
-        a => match state.env.get("PATH") {
+        _ => match state.env.get("PATH") {
             Some(path) => {
                 let p = path
                     .as_str()
@@ -103,7 +103,7 @@ fn main() {
                     Type::File(path) => println!("{} is {}", c, path),
                     _ => println!("{}: not found", c),
                 },
-                Cmd::ExportCmd(c, (k, v)) => {
+                Cmd::ExportCmd(_c, (k, v)) => {
                     state.env.insert(k, v);
                 }
                 Cmd::NotRecognisedCmd(cm) => {
