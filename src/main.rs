@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::{env, fs, io};
 
 enum Type {
@@ -52,10 +53,15 @@ fn which_type(cmd: String, state: &State) -> Type {
                     .as_str()
                     .split(":")
                     .into_iter()
-                    .filter(|path| fs::exists(format!("{}/{}", path, cmd)).unwrap_or(false))
+                    .filter(|path| {
+                        let meta = fs::metadata(format!("{}/{}", path, cmd));
+                        match meta {
+                            Ok(r) => r.permissions().mode() & 0o111 != 0,
+                            Err(e) => false,
+                        }
+                    })
                     .last();
 
-            
                 if p.is_some() {
                     Type::File(format!("{}/{}", p.unwrap_or(""), cmd))
                 } else {
