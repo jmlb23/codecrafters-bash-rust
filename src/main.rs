@@ -1,21 +1,26 @@
+use std::io;
 use std::io::Write;
-use std::{io, str::FromStr};
-
-use crate::Cmd::{EchoCmd, ExitCmd, NotRecognisedCmd};
+use std::ops::Deref;
 
 enum Cmd {
     ExitCmd(i32),
     EchoCmd(String),
     NotRecognisedCmd(String),
+    TypeCmd(String),
 }
 
 fn parse_command(cmd: &str) -> Cmd {
     let slice: Vec<&str> = cmd.split_whitespace().collect();
     match &slice[..] {
-        ["exit"] => ExitCmd(0),
-        ["echo", rest @ ..] => EchoCmd(rest.join(" ").to_string()),
-        a => NotRecognisedCmd(a.join(" ").to_string()),
+        ["exit"] => Cmd::ExitCmd(0),
+        ["echo", rest @ ..] => Cmd::EchoCmd(rest.join(" ").to_string()),
+        ["type", cmd] => Cmd::TypeCmd(cmd.to_string()),
+        a => Cmd::NotRecognisedCmd(a.join(" ").to_string()),
     }
+}
+
+fn is_builtin(cmd: &String) -> bool {
+    ["echo", "exit", "type"].contains(&cmd.as_str())
 }
 
 fn main() {
@@ -27,13 +32,20 @@ fn main() {
         let cmd_trimmed = cmd.trim();
         match result {
             Ok(_size) => match parse_command(cmd_trimmed) {
-                ExitCmd(num) => {
+                Cmd::ExitCmd(num) => {
                     break;
-                },
-                EchoCmd(s) => {
+                }
+                Cmd::EchoCmd(s) => {
                     println!("{}", s)
-                },
-                NotRecognisedCmd(cm) => {
+                }
+                Cmd::TypeCmd(c) => {
+                    if is_builtin(&c) {
+                        println!("{} is a shell builtin", c)
+                    } else {
+                        println!("{}: not found", c)
+                    }
+                }
+                Cmd::NotRecognisedCmd(cm) => {
                     println!("{}: command not found", cm)
                 }
             },
