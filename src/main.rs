@@ -60,7 +60,7 @@ fn which_type(cmd: String, state: &State) -> Type {
                             Err(e) => false,
                         }
                     })
-                    .last();
+                    .next();
 
                 if p.is_some() {
                     Type::File(format!("{}/{}", p.unwrap_or(""), cmd))
