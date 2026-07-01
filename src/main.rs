@@ -85,7 +85,7 @@ fn main() {
     let default_prompt = &"$".to_string();
     loop {
         let prompt = &state.env.get("PROMPT").unwrap_or(default_prompt).clone();
-        print!("{}", prompt);
+        print!("{} ", prompt);
         io::stdout().flush().unwrap();
         let result = io::stdin().read_line(&mut cmd);
         let cmd_trimmed = cmd.trim();
