@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::ops::Deref;
 use std::os::unix::fs::PermissionsExt;
-use std::os::unix::process::CommandExt;
 use std::process::Command;
 use std::{env, fs, io};
 
