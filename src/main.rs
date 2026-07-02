@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::io::Write;
+use std::ops::Deref;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::process::CommandExt;
+use std::process::Command;
 use std::{env, fs, io};
 
 enum Type {
@@ -17,6 +20,8 @@ enum Cmd {
     EchoCmd(String),
     TypeCmd(String, Type),
     ExportCmd(String, (String, String)),
+    BinaryCmd(String, Vec<String>),
+    CarriageReturn,
     NotRecognisedCmd(String),
 }
 
@@ -37,8 +42,37 @@ fn parse_command(cmd: &str, state: &State) -> Cmd {
             let (key, value) = env_var.split_once("=").expect("Malformed ");
             Cmd::ExportCmd(cmd.to_string(), (key.to_string(), value.to_string()))
         }
-        a => Cmd::NotRecognisedCmd(a.join(" ").to_string()),
+        a => {
+            let fst = a.first().unwrap_or(&"");
+            if fst.is_empty() {
+                return Cmd::CarriageReturn;
+            }
+            match cmd_exists(fst.to_string(), state) {
+                Some(_) => Cmd::BinaryCmd(
+                    fst.to_string(),
+                    a.iter().skip(1).map(|arg| arg.to_string()).collect(),
+                ),
+                None => Cmd::NotRecognisedCmd(cmd.to_string()),
+            }
+        }
     }
+}
+
+fn cmd_exists(cmd: String, state: &State) -> Option<String> {
+    state.env.get("PATH").and_then(|path| {
+        path.as_str()
+            .split(":")
+            .into_iter()
+            .filter(|path| {
+                let meta = fs::metadata(format!("{}/{}", path, cmd));
+                match meta {
+                    Ok(r) => r.permissions().mode() & 0o111 != 0,
+                    Err(_) => false,
+                }
+            })
+            .map(|path| path.to_string())
+            .next()
+    })
 }
 
 fn which_type(cmd: String, state: &State) -> Type {
@@ -47,27 +81,8 @@ fn which_type(cmd: String, state: &State) -> Type {
         alias if state.alias.contains_key(alias) => Type::Alias,
         keyword if state.keywords.contains(&keyword.to_string()) => Type::Keyword,
         function if state.functions.contains_key(function) => Type::Function,
-        _ => match state.env.get("PATH") {
-            Some(path) => {
-                let p = path
-                    .as_str()
-                    .split(":")
-                    .into_iter()
-                    .filter(|path| {
-                        let meta = fs::metadata(format!("{}/{}", path, cmd));
-                        match meta {
-                            Ok(r) => r.permissions().mode() & 0o111 != 0,
-                            Err(e) => false,
-                        }
-                    })
-                    .next();
-
-                if p.is_some() {
-                    Type::File(format!("{}/{}", p.unwrap_or(""), cmd))
-                } else {
-                    Type::NotRecognised
-                }
-            }
+        _ => match cmd_exists(cmd.clone(), state) {
+            Some(path) => Type::File(format!("{}/{}", path, cmd)),
             None => Type::NotRecognised,
         },
     }
@@ -78,7 +93,7 @@ fn main() {
     let mut state = State {
         env: HashMap::from([("PATH".to_string(), path)]),
         alias: HashMap::new(),
-        keywords: vec![
+        keywords: [
             "if", "then", "elif", "else", "fi", "case", "in", "esac", "for", "while", "until",
             "do", "done", "{", "}", "!",
         ]
@@ -111,6 +126,20 @@ fn main() {
                 },
                 Cmd::ExportCmd(_c, (k, v)) => {
                     state.env.insert(k, v);
+                }
+                Cmd::CarriageReturn => {
+                    println!()
+                }
+                Cmd::BinaryCmd(command, args) => {
+                    let out = Command::new(command).args(args.iter().as_slice()).output();
+                    match out {
+                        Ok(o) => {
+                            print!("{}", String::from_utf8_lossy(o.stdout.iter().as_slice()));
+                        }
+                        Err(e) => {
+                            print!("{}", e.to_string());
+                        }
+                    }
                 }
                 Cmd::NotRecognisedCmd(cm) => {
                     println!("{}: command not found", cm)
