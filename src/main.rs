@@ -79,7 +79,7 @@ fn cmd_exists(cmd: String, state: &State) -> Option<String> {
 
 fn which_type(cmd: String, state: &State) -> Type {
     match cmd.as_str() {
-        "echo" | "exit" | "type" => Type::Builtin,
+        "echo" | "exit" | "type" | "pwd" => Type::Builtin,
         alias if state.alias.contains_key(alias) => Type::Alias,
         keyword if state.keywords.contains(&keyword.to_string()) => Type::Keyword,
         function if state.functions.contains_key(function) => Type::Function,
