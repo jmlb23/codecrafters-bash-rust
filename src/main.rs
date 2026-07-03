@@ -157,7 +157,7 @@ fn main() {
                 Cmd::CdCmd(path) => {
                     let entry = Path::new(path.as_str());
                     if entry.exists() && entry.is_dir() {
-                        state.current_dir = path
+                        state.current_dir = entry.canonicalize().unwrap_or_default().to_str().unwrap_or_default().to_string()
                     } else {
                         println!("cd: {}: No such file or directory", path)
                     }
