@@ -16,6 +16,7 @@ enum Type {
 enum Cmd {
     ExitCmd(i32),
     EchoCmd(String),
+    PwdCmd,
     TypeCmd(String, Type),
     ExportCmd(String, (String, String)),
     BinaryCmd(String, Vec<String>),
@@ -28,6 +29,7 @@ struct State {
     alias: HashMap<String, String>,
     keywords: Vec<String>,
     functions: HashMap<String, String>,
+    current_dir: String,
 }
 
 fn parse_command(cmd: &str, state: &State) -> Cmd {
@@ -40,6 +42,8 @@ fn parse_command(cmd: &str, state: &State) -> Cmd {
             let (key, value) = env_var.split_once("=").expect("Malformed ");
             Cmd::ExportCmd(cmd.to_string(), (key.to_string(), value.to_string()))
         }
+
+        ["pwd"] => Cmd::PwdCmd,
         a => {
             let fst = a.first().unwrap_or(&"");
             if fst.is_empty() {
@@ -99,6 +103,11 @@ fn main() {
         .map(|e| e.to_string())
         .collect(),
         functions: HashMap::new(),
+        current_dir: env::current_dir()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+            .to_string(),
     };
     let mut cmd = String::new();
     let default_prompt = &"$".to_string();
@@ -138,6 +147,9 @@ fn main() {
                             print!("{}", e.to_string());
                         }
                     }
+                }
+                Cmd::PwdCmd => {
+                    println!("{}", state.current_dir)
                 }
                 Cmd::NotRecognisedCmd(cm) => {
                     println!("{}: command not found", cm)
