@@ -31,7 +31,6 @@ struct State {
     alias: HashMap<String, String>,
     keywords: Vec<String>,
     functions: HashMap<String, String>,
-    current_dir: String,
 }
 
 fn parse_command(cmd: &str, state: &State) -> Cmd {
@@ -106,11 +105,6 @@ fn main() {
         .map(|e| e.to_string())
         .collect(),
         functions: HashMap::new(),
-        current_dir: env::current_dir()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-            .to_string(),
     };
     let mut cmd = String::new();
     let default_prompt = &"$".to_string();
@@ -152,18 +146,18 @@ fn main() {
                     }
                 }
                 Cmd::PwdCmd => {
-                    println!("{}", state.current_dir)
+                    println!(
+                        "{}",
+                        env::current_dir()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default()
+                    )
                 }
                 Cmd::CdCmd(path) => {
                     let entry = Path::new(path.as_str());
                     if entry.exists() && entry.is_dir() {
-                        state.current_dir = entry
-                            .canonicalize()
-                            .unwrap_or_default()
-                            .to_str()
-                            .unwrap_or_default()
-                            .to_string();
-                        env::set_current_dir(entry);
+                        env::set_current_dir(entry).unwrap_or_default();
                     } else {
                         println!("cd: {}: No such file or directory", path)
                     }
