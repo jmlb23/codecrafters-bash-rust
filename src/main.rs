@@ -155,9 +155,10 @@ fn main() {
                     )
                 }
                 Cmd::CdCmd(path) => {
+                    let path = path.replace("~", env::var("HOME").unwrap_or_default().as_str());
                     let entry = Path::new(path.as_str());
                     if entry.exists() && entry.is_dir() {
-                        env::set_current_dir(entry.canonicalize().unwrap_or_default()).unwrap_or_default();
+                        env::set_current_dir(entry).unwrap_or_default();
                     } else {
                         println!("cd: {}: No such file or directory", path)
                     }
