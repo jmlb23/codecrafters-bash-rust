@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::process::Command;
 use std::{env, fs, io};
 
@@ -17,6 +18,7 @@ enum Cmd {
     ExitCmd(i32),
     EchoCmd(String),
     PwdCmd,
+    CdCmd(String),
     TypeCmd(String, Type),
     ExportCmd(String, (String, String)),
     BinaryCmd(String, Vec<String>),
@@ -44,6 +46,7 @@ fn parse_command(cmd: &str, state: &State) -> Cmd {
         }
 
         ["pwd"] => Cmd::PwdCmd,
+        ["cd", path] => Cmd::CdCmd(path.to_string()),
         a => {
             let fst = a.first().unwrap_or(&"");
             if fst.is_empty() {
@@ -79,7 +82,7 @@ fn cmd_exists(cmd: String, state: &State) -> Option<String> {
 
 fn which_type(cmd: String, state: &State) -> Type {
     match cmd.as_str() {
-        "echo" | "exit" | "type" | "pwd" => Type::Builtin,
+        "echo" | "exit" | "type" | "pwd" | "cd" => Type::Builtin,
         alias if state.alias.contains_key(alias) => Type::Alias,
         keyword if state.keywords.contains(&keyword.to_string()) => Type::Keyword,
         function if state.functions.contains_key(function) => Type::Function,
@@ -150,6 +153,14 @@ fn main() {
                 }
                 Cmd::PwdCmd => {
                     println!("{}", state.current_dir)
+                }
+                Cmd::CdCmd(path) => {
+                    let entry = Path::new(path.as_str());
+                    if entry.exists() && entry.is_dir() {
+                        state.current_dir = path
+                    } else {
+                        println!("cd: {}: No such file or directory", path)
+                    }
                 }
                 Cmd::NotRecognisedCmd(cm) => {
                     println!("{}: command not found", cm)
