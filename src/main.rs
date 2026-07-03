@@ -156,20 +156,14 @@ fn main() {
                 }
                 Cmd::CdCmd(path) => {
                     let entry = Path::new(path.as_str());
-                    if entry.exists() {
-                        if entry.is_absolute() {
-                            state.current_dir = path
-                        } else {
-                            let current = state.current_dir;
-                            let new_path = current + "/" + path.as_str();
-                            state.current_dir =
-                                Path::new(new_path.as_str())
-                                    .canonicalize()
-                                    .unwrap_or_default()
-                                    .to_str()
-                                    .unwrap_or_default()
-                                    .to_string()
-                        }
+                    if entry.exists() && entry.is_dir() {
+                        state.current_dir = entry
+                            .canonicalize()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default()
+                            .to_string();
+                        env::set_current_dir(entry);
                     } else {
                         println!("cd: {}: No such file or directory", path)
                     }
