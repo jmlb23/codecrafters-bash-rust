@@ -156,7 +156,7 @@ fn main() {
                 }
                 Cmd::CdCmd(path) => {
                     let entry = Path::new(path.as_str());
-                    if entry.exists() && entry.is_dir() {
+                    if entry.exists() {
                         if entry.is_absolute() {
                             state.current_dir = path
                         } else {
